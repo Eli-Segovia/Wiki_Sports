@@ -1,0 +1,62 @@
+version: '2.1'
+
+services:
+  wiki-sports-db:
+    build: ./backend/mysql/db
+    restart: always
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: 'wiki_sports'
+      MYSQL_USER: 'wiki-sport-main'
+      MYSQL_PASSWORD: 'wikisport'
+      MYSQL_ROOT_PASSWORD: 'password'
+    command: --default-authentication-plugin=mysql_native_password
+    ports: 
+      - 3351:3306
+    volumes:
+      - wiki-sports_vol:/var/lib/mysql
+    networks:
+      - backend
+    healthcheck:
+      test: "exit 0"
+
+
+  wiki-sports-backend-api:
+    build: ./backend
+    restart: always
+    working_dir: /usr/src/app
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - wiki-sports-db
+    ports:
+      - 8080:8080
+    networks:
+      - backend
+      - frontend
+    cap_add:
+      - SYS_NICE
+
+  frontend-app:
+    tty: true
+    build: ./frontend
+    restart: always
+    working_dir: /usr/src/app
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - wiki-sports-backend-api
+    ports:
+      - 80:3000
+    networks:
+      - frontend
+
+
+networks:
+  backend:
+  frontend:
+
+volumes:
+  wiki-sports_vol:
